@@ -1,0 +1,72 @@
+{
+    "name": "Default Court Judgement Template",
+    "version": "1.0",
+    "fields": {
+        "district": {
+            "type": "dropdown",
+            "default": "मोरङ",
+            "required": true
+        },
+        "cdo_name": {
+            "type": "text_dropdown",
+            "default": "",
+            "required": true
+        },
+        "wadi_content": {
+            "type": "multiline",
+            "default": "",
+            "required": true
+        },
+        "pratiwadi_content": {
+            "type": "multiline",
+            "default": "",
+            "required": true
+        },
+        "mudda": {
+            "type": "text",
+            "default": "",
+            "required": true
+        },
+        "mudda_number": {
+            "type": "text",
+            "default": "",
+            "required": true
+        },
+        "case_points": {
+            "type": "dynamic_list",
+            "default": [""],
+            "min_items": 1
+        },
+        "office_decision": {
+            "type": "multiline",
+            "default": "नियम बमोजिम पेशी सुचिमा चढि पेश हुन आएको प्रस्तुत मुद्दामा मिसिल संलग्न कागज प्रमाणहरु अध्ययन गरी हेर्दा मुद्दा किनारा गरिदिदा हुने देखि इन्साफ तर्फ विचार गर्दा,",
+            "required": true
+        },
+        "tapsil_points": {
+            "type": "dynamic_list",
+            "default": [
+                "प्रस्तुत मुद्दा फैसला भएको एक प्रति नक्कल साथै राखि जिल्ला सरकारी वकिल कार्यालय मोरङलाई जानकारी दिनु",
+                "ऐनको म्यादभित्र पुनरावेदन परे सक्कल मिसिल मोरङ जिल्ला अदालतमा पठाइदिनु, पुनरावेदन नपरे प्रस्तुत मुद्दाको लगत कट्टा गरी छिनुवा लगतमा आम्दानी बाँधी राख्नु",
+                "सरोकारवालाले नक्कल माँग गरे कानुनको रित पुर्‍याई नक्कल दिनु",
+                "प्रतिवादीले र.नं. {} बाट राखेको धरौटी रु. {} मा जरिवाना वापत रु. {} सदर स्याहा गरी बाँकी रु. {} निजले धरौटी फिर्ता माँग गर्न आएमा मुद्दा अन्तिम भएपछि नियमानुसार फिर्ता दिनु, प्रतिवादीले साधारण तारिख गुजारेको हुँदा नियम अनुसार जरिवाना लगत कसी असुल उपर गर्नु"
+            ],
+            "min_items": 1
+        },
+        "typist_name": {
+            "type": "text_dropdown",
+            "default": "",
+            "required": true
+        },
+        "footer_cdo_name": {
+            "type": "text_dropdown",
+            "default": "",
+            "required": true,
+            "linked_to": "cdo_name"
+        },
+        "document_date": {
+            "type": "nepali_date",
+            "default": "today",
+            "required": true
+        }
+    }
+}

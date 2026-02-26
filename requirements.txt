@@ -1,0 +1,24 @@
+# GUI Framework
+customtkinter>=5.2.0
+
+# Database
+# SQLite is built-in to Python
+
+# Remote Database & Auth
+supabase>=2.0.0
+
+# Document Generation
+python-docx>=1.0.0
+docx2pdf>=0.1.8
+
+# Nepali Date/Time
+nepali-datetime>=1.0.7
+
+# Environment Variables
+python-dotenv>=1.0.0
+
+# Image Processing (for emblem)
+Pillow>=10.0.0
+
+# Packaging (dev dependency)
+pyinstaller>=6.0.0
