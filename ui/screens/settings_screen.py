@@ -223,6 +223,51 @@ class SettingsScreen(ctk.CTkFrame):
             text_color=AppTheme.TEXT_SECONDARY
         )
         trash_info.pack(side="left")
+
+                # Developer options (shown only in DEBUG mode)
+        if Settings.DEBUG:
+            dev_divider = ctk.CTkLabel(
+                content,
+                text="Developer Options",
+                font=AppTheme.get_font("normal", bold=True),
+                text_color=AppTheme.TEXT_PRIMARY
+            )
+            dev_divider.pack(anchor="w", pady=(15, 5))
+
+            rb_frame = ctk.CTkFrame(content, fg_color="transparent")
+            rb_frame.pack(fill="x", pady=5)
+
+            rb_label = ctk.CTkLabel(
+                rb_frame,
+                text="Remote backup (silent):",
+                font=AppTheme.get_font("normal"),
+                text_color=AppTheme.TEXT_PRIMARY,
+                width=150,
+                anchor="w"
+            )
+            rb_label.pack(side="left")
+
+            rb_default = str(self.settings.get("remote_backup_enabled", "false")).lower() in ("true", "1", "yes", "on")
+            self.remote_backup_var = ctk.BooleanVar(value=rb_default)
+
+            rb_switch = ctk.CTkSwitch(
+                rb_frame,
+                text="Enabled",
+                variable=self.remote_backup_var,
+                onvalue=True,
+                offvalue=False,
+                font=AppTheme.get_font("normal"),
+                command=self._on_remote_backup_change
+            )
+            rb_switch.pack(side="left", padx=(10, 0))
+
+            rb_hint = ctk.CTkLabel(
+                content,
+                text="When enabled, the app will upload DOCX backups only if a Supabase backup request exists.",
+                font=AppTheme.get_font("small"),
+                text_color=AppTheme.TEXT_SECONDARY
+            )
+            rb_hint.pack(anchor="w", pady=(2, 0))
     
     def _create_info_row(self, parent, label: str, value: str):
         """Create an info row."""
@@ -259,3 +304,12 @@ class SettingsScreen(ctk.CTkFrame):
         """Handle auto-save toggle."""
         value = 'true' if self.autosave_var.get() else 'false'
         self.local_db.set_setting('autosave', value)
+
+
+
+    def _on_remote_backup_change(self):
+        """Handle remote backup toggle (developer option)."""
+        value = 'true' if getattr(self, 'remote_backup_var', None) and self.remote_backup_var.get() else 'false'
+        self.local_db.set_setting('remote_backup_enabled', value)
+        # Keep local cache in sync
+        self.settings['remote_backup_enabled'] = value

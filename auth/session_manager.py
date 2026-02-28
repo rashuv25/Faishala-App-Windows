@@ -34,6 +34,23 @@ class SessionManager:
         """Check if user is logged in."""
         return self._user_id is not None
     
+    def logout(self):
+        """Clear session completely (works with property-backed fields)."""
+        # Prefer internal fields if properties are read-only
+        if hasattr(self, "_user_id"):
+            self._user_id = None
+        if hasattr(self, "_username"):
+            self._username = None
+        if hasattr(self, "_session_token"):
+            self._session_token = None
+
+        # If there is an existing clear method in your class, also call it
+        if hasattr(self, "clear_session") and callable(getattr(self, "clear_session")):
+            try:
+                self.clear_session()
+            except Exception:
+                pass
+            
     @property
     def user_id(self) -> Optional[int]:
         """Get current user ID."""

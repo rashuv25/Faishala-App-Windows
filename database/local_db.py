@@ -22,6 +22,23 @@ class LocalDatabase:
         query = "SELECT * FROM users WHERE username = ?"
         return self.db.fetch_one(query, (username,))
     
+    def get_last_session_user(self) -> Optional[Dict]:
+        """Get the most recently updated user who has a session token."""
+        query = """
+            SELECT * FROM users
+            WHERE session_token IS NOT NULL AND session_token != ''
+            ORDER BY updated_at DESC
+            LIMIT 1
+        """
+        return self.db.fetch_one(query, ())
+
+    def set_user_session_token(self, user_id: int, token: Optional[str]):
+        query = "UPDATE users SET session_token = ?, updated_at = ? WHERE id = ?"
+        now = datetime.now().isoformat()
+        self.db.execute(query, (token, now, user_id))
+
+
+    
     def update_user_login(self, user_id: int, nepali_year: int, nepali_month: int, token: str) -> None:
         """Update user's last login info."""
         query = """
@@ -218,26 +235,43 @@ class LocalDatabase:
             return json.loads(row['save_state'])
         return None
     
-    # ==================== SETTINGS OPERATIONS ====================
-    
+     # ==================== SETTINGS OPERATIONS ====================
+
     def get_setting(self, key: str) -> Optional[str]:
         """Get app setting."""
         query = "SELECT value FROM app_settings WHERE key = ?"
         row = self.db.fetch_one(query, (key,))
-        return row['value'] if row else None
-    
+        return row["value"] if row else None
+
+    def get_bool_setting(self, key: str, default: bool = False) -> bool:
+        """Get a boolean setting from app_settings.
+
+        Accepts common truthy values: true/1/yes/on (case-insensitive).
+        """
+        value = self.get_setting(key)
+        if value is None:
+            return default
+        return str(value).strip().lower() in ("true", "1", "yes", "on")
+
     def set_setting(self, key: str, value: str) -> None:
         """Set app setting."""
         query = """
-            INSERT INTO app_settings (key, value, updated_at) 
+            INSERT INTO app_settings (key, value, updated_at)
             VALUES (?, ?, ?)
             ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = ?
         """
         now = datetime.now().isoformat()
         self.db.execute(query, (key, value, now, value, now))
-    
+
+    # ==================== BACKUP LOG ====================
+
+    def log_backup_status(self, document_id: Optional[int], status: str) -> None:
+        """Write a silent backup status entry to backup_log."""
+        query = "INSERT INTO backup_log (document_id, status) VALUES (?, ?)"
+        self.db.execute(query, (document_id, status))
+
     def get_all_settings(self) -> Dict[str, str]:
         """Get all settings as a dictionary."""
         query = "SELECT key, value FROM app_settings"
         rows = self.db.fetch_all(query, ())
-        return {row['key']: row['value'] for row in rows}
+        return {row["key"]: row["value"] for row in rows}

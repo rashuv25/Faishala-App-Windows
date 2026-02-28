@@ -138,12 +138,23 @@ class MainScreen(ctk.CTkFrame):
         self._show_editor(document_id)
     
     def _handle_logout(self):
-        """Handle logout."""
-        from auth.authenticator import Authenticator
-        
-        authenticator = Authenticator()
-        authenticator.logout()
-        self.on_logout()
+        """Handle user logout properly."""
+        from database.local_db import LocalDatabase
+        from auth.session_manager import SessionManager
+
+        local_db = LocalDatabase()
+        session = SessionManager()
+
+        # Clear DB session token first (so relaunch doesn't restore)
+        if session.user_id:
+            local_db.set_user_session_token(session.user_id, None)
+
+        # Clear in-memory session
+        session.logout()
+
+        # Route to login
+        if callable(self.on_logout):
+            self.on_logout()
     
     def _clear_content(self):
         """Clear content area."""
