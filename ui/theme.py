@@ -3,6 +3,7 @@
 
 import customtkinter as ctk
 from config.settings import Settings
+from utils.font_manager import FontManager
 
 
 class AppTheme:
@@ -32,8 +33,8 @@ class AppTheme:
     EXPORT_HOVER = ("#fff3e0", "#4b3621")
 
     # Fonts
-    FONT_FAMILY = "Kalimati"
-    FONT_FAMILY_FALLBACK = "Arial"
+    FONT_FAMILY = FontManager().get_best_ui_font()
+    FONT_FAMILY_FALLBACK = Settings.UI_FONT_FALLBACK
 
     FONT_SIZE_SMALL = 12
     FONT_SIZE_NORMAL = 14

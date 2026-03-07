@@ -2,6 +2,7 @@
 """Font management utilities."""
 
 import platform
+import subprocess
 from pathlib import Path
 from typing import Optional
 
@@ -9,62 +10,118 @@ from config.settings import Settings
 
 
 class FontManager:
-    """Manages Kalimati font installation and usage."""
-    
+    """Manages export font and UI font registration."""
+
     def __init__(self):
         """Initialize font manager."""
-        self.font_path = Settings.FONT_PATH
-        self.font_name = Settings.FONT_NAME
-    
-    def is_font_available(self) -> bool:
-        """Check if Kalimati font file exists."""
-        return self.font_path.exists()
-    
-    def get_font_path(self) -> Optional[Path]:
-        """Get path to font file."""
-        if self.is_font_available():
-            return self.font_path
-        return None
-    
-    def register_font(self) -> bool:
-        """Register font for use in the application."""
-        if not self.is_font_available():
-            print(f"Font file not found: {self.font_path}")
-            return False
-        
+        self.export_font_path = Settings.EXPORT_FONT_PATH
+        self.export_font_name = Settings.EXPORT_FONT_NAME
+
+        self.ui_font_path = Settings.UI_FONT_PATH
+        self.ui_font_name = Settings.UI_FONT_NAME
+
+    def is_font_installed(self, font_name: str) -> bool:
+        """Check whether a font is available on the system."""
         system = platform.system()
-        
+
         try:
-            if system == "Windows":
-                return self._register_windows()
-            elif system == "Linux":
-                return self._register_linux()
-            else:
-                print(f"Unsupported platform: {system}")
+            if system == "Linux":
+                result = subprocess.run(
+                    ["fc-list", ":", "family"],
+                    capture_output=True,
+                    text=True
+                )
+                return font_name.lower() in result.stdout.lower()
+
+            elif system == "Windows":
+                fonts_dir = Path("C:/Windows/Fonts")
+                if not fonts_dir.exists():
+                    return False
+
+                for item in fonts_dir.iterdir():
+                    if font_name.lower() in item.name.lower():
+                        return True
                 return False
-        except Exception as e:
-            print(f"Font registration error: {e}")
+
             return False
-    
-    def _register_windows(self) -> bool:
-        """Register font on Windows."""
-        # CustomTkinter should handle this automatically
-        # if font is in system or app fonts folder
-        return True
-    
-    def _register_linux(self) -> bool:
-        """Register font on Linux."""
-        # Copy font to user fonts directory
-        import shutil
-        user_fonts = Path.home() / ".local" / "share" / "fonts"
-        user_fonts.mkdir(parents=True, exist_ok=True)
-        
-        dest = user_fonts / self.font_path.name
-        if not dest.exists():
-            shutil.copy(self.font_path, dest)
-        
-        # Rebuild font cache
-        import subprocess
-        subprocess.run(['fc-cache', '-f'], capture_output=True)
-        
-        return True
+
+        except Exception:
+            return False
+
+    def _register_linux_font_file(self, source_path: Path) -> bool:
+        """Register a font file on Linux."""
+        try:
+            import shutil
+
+            if not source_path.exists():
+                return False
+
+            user_fonts = Path.home() / ".local" / "share" / "fonts"
+            user_fonts.mkdir(parents=True, exist_ok=True)
+
+            dest = user_fonts / source_path.name
+            if not dest.exists():
+                shutil.copy(source_path, dest)
+
+            subprocess.run(["fc-cache", "-f"], capture_output=True)
+            return True
+        except Exception:
+            return False
+
+    def _register_windows_font_file(self, source_path: Path) -> bool:
+        """Register a font file on Windows for the current session."""
+        try:
+            import ctypes
+
+            if not source_path.exists():
+                return False
+
+            FR_PRIVATE = 0x10
+            path_str = str(source_path)
+
+            added = ctypes.windll.gdi32.AddFontResourceExW(path_str, FR_PRIVATE, 0)
+            return added > 0
+        except Exception:
+            return False
+
+    def register_font_file(self, source_path: Path) -> bool:
+        """Register a specific font file."""
+        system = platform.system()
+
+        if not source_path.exists():
+            return False
+
+        if system == "Linux":
+            return self._register_linux_font_file(source_path)
+        elif system == "Windows":
+            return self._register_windows_font_file(source_path)
+
+        return False
+
+    def register_fonts(self) -> dict:
+        """Register both UI and export fonts."""
+        ui_ok = self.is_font_installed(self.ui_font_name)
+        export_ok = self.is_font_installed(self.export_font_name)
+
+        if not ui_ok:
+            self.register_font_file(self.ui_font_path)
+            ui_ok = self.is_font_installed(self.ui_font_name)
+
+        if not export_ok:
+            self.register_font_file(self.export_font_path)
+            export_ok = self.is_font_installed(self.export_font_name)
+
+        return {
+            "ui_font_registered": ui_ok,
+            "export_font_registered": export_ok
+        }
+
+    def get_best_ui_font(self) -> str:
+        """Return the best UI font."""
+        if self.is_font_installed(self.ui_font_name):
+            return self.ui_font_name
+        return Settings.UI_FONT_FALLBACK
+
+    def get_export_font(self) -> str:
+        """Return export font name."""
+        return self.export_font_name

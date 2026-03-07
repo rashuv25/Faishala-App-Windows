@@ -23,7 +23,7 @@ class DocxGenerator:
     
     def __init__(self):
         """Initialize DOCX generator."""
-        self.font_name = Settings.FONT_NAME
+        self.font_name = Settings.EXPORT_FONT_NAME
         self.dot_calculator = DotCalculator()
     
     def generate(self, document_data: Dict[str, Any], output_path: Path) -> bool:

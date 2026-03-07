@@ -99,10 +99,16 @@ class Settings:
     SUPABASE_URL = os.getenv("SUPABASE_URL", "")
     SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
     
-    # Font
-    FONT_NAME = "Kalimati"
-    FONT_FILE = "Kalimati-Regular.ttf"
-    FONT_PATH = FONTS_DIR / FONT_FILE
+    # Export Font (used in DOCX/PDF only)
+    EXPORT_FONT_NAME = "Kalimati"
+    EXPORT_FONT_FILE = "Kalimati.ttf"
+    EXPORT_FONT_PATH = FONTS_DIR / EXPORT_FONT_FILE
+
+    # UI Font (used inside desktop application)
+    UI_FONT_NAME = "Noto Sans Devanagari"
+    UI_FONT_FILE = "NotoSansDevanagari-Regular.ttf"
+    UI_FONT_PATH = FONTS_DIR / UI_FONT_FILE
+    UI_FONT_FALLBACK = "Arial"
     
     # UI Settings
     WINDOW_WIDTH = 1200
