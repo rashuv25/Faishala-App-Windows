@@ -1,55 +1,69 @@
 # -*- coding: utf-8 -*-
-"""District dropdown field component."""
+"""District field component using ttk Combobox for better dropdown behavior."""
 
+import tkinter as tk
+from tkinter import ttk
 import customtkinter as ctk
-from typing import Callable, Optional
+from typing import Callable
 
 from ui.theme import AppTheme
 from config.districts import NEPAL_DISTRICTS_SORTED
-from config.settings import Settings
 
 
 class DistrictField(ctk.CTkFrame):
-    """District selection dropdown field."""
-    
+    """District selection field."""
+
     def __init__(
         self,
         parent,
-        default_value: str = None,
+        default_value: str = "",
         on_change: Callable[[str], None] = None
     ):
         """Initialize district field."""
         super().__init__(parent, fg_color="transparent")
-        
+
         self.on_change = on_change
-        self.default_value = default_value or Settings.DEFAULT_DISTRICT
-        
+        self.value = default_value or "मोरङ"
+
         self._create_widgets()
-    
+
     def _create_widgets(self):
         """Create district dropdown."""
-        self.dropdown = ctk.CTkComboBox(
-            self,
-            values=NEPAL_DISTRICTS_SORTED,
-            width=150,
-            height=AppTheme.INPUT_HEIGHT,
-            font=AppTheme.get_font("normal"),
-            dropdown_font=AppTheme.get_font("normal"),
-            command=self._on_select
+        style = ttk.Style()
+        try:
+            style.theme_use("clam")
+        except Exception:
+            pass
+
+        style.configure(
+            "Mudda.TCombobox",
+            padding=6
         )
-        self.dropdown.set(self.default_value)
-        self.dropdown.pack()
-    
-    def _on_select(self, value: str):
-        """Handle selection change."""
+
+        self.var = tk.StringVar(value=self.value)
+
+        self.combo = ttk.Combobox(
+            self,
+            textvariable=self.var,
+            values=NEPAL_DISTRICTS_SORTED,
+            state="readonly",
+            width=14,
+            style="Mudda.TCombobox",
+            font=(AppTheme.FONT_FAMILY_FALLBACK, 12)
+        )
+        self.combo.pack(fill="x")
+
+        self.combo.bind("<<ComboboxSelected>>", self._on_select)
+
+    def _on_select(self, event=None):
+        """Handle district selection."""
         if self.on_change:
-            self.on_change(value)
-    
+            self.on_change(self.var.get())
+
     def get_value(self) -> str:
-        """Get current value."""
-        return self.dropdown.get()
-    
+        """Get selected district."""
+        return self.var.get()
+
     def set_value(self, value: str):
-        """Set current value."""
-        if value in NEPAL_DISTRICTS_SORTED:
-            self.dropdown.set(value)
+        """Set selected district."""
+        self.var.set(value)

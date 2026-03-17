@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tapsil (तपसिल) dynamic list field component."""
+"""Tapsil dynamic list field component."""
 
 import customtkinter as ctk
 from typing import Callable, List
@@ -10,8 +10,8 @@ from utils.helpers import to_nepali_number
 
 
 class TapsilField(ctk.CTkFrame):
-    """Dynamic tapsil points list with CRUD operations."""
-    
+    """Dynamic tapsil points list."""
+
     def __init__(
         self,
         parent,
@@ -20,154 +20,151 @@ class TapsilField(ctk.CTkFrame):
     ):
         """Initialize tapsil field."""
         super().__init__(parent, fg_color="transparent")
-        
+
         self.on_change = on_change
         self.points = points if points and len(points) > 0 else DEFAULT_TAPSIL_POINTS.copy()
         self.point_widgets = []
-        
+
         self._create_widgets()
-    
+
     def _create_widgets(self):
         """Create tapsil widgets."""
-        # Title
         title_label = ctk.CTkLabel(
             self,
             text="तपसिल",
             font=AppTheme.get_font("normal", bold=True),
             text_color=AppTheme.TEXT_PRIMARY
         )
-        title_label.pack(anchor="w", pady=(0, 10))
-        
-        # Points container
+        title_label.pack(anchor="w", pady=(0, 8))
+
         self.points_container = ctk.CTkFrame(self, fg_color="transparent")
         self.points_container.pack(fill="x")
-        
-        # Render existing points
+
         for i, point in enumerate(self.points):
             self._add_point_widget(i, point)
-        
-        # Add button
+
         self.add_btn = ctk.CTkButton(
             self,
-            text="+ नयाँ तपसिल थप्नुहोस् (Add New Tapsil)",
+            text="+ नयाँ तपसिल थप्नुहोस्",
+            height=36,
             font=AppTheme.get_font("normal"),
             fg_color="transparent",
-            hover_color=AppTheme.BACKGROUND_COLOR,
+            hover_color=AppTheme.HOVER_LIGHT,
             text_color=AppTheme.PRIMARY_COLOR,
             anchor="w",
             command=self._add_new_point
         )
-        self.add_btn.pack(anchor="w", pady=10)
-    
+        self.add_btn.pack(anchor="w", pady=(10, 0))
+
     def _add_point_widget(self, index: int, value: str = ""):
         """Add a tapsil point widget."""
-        point_frame = ctk.CTkFrame(self.points_container, fg_color="transparent")
-        point_frame.pack(fill="x", pady=5)
-        
-        # Text area (content comes first, number at end)
-        text_area = ctk.CTkTextbox(
-            point_frame,
-            height=80,
-            font=AppTheme.get_font("normal"),
-            wrap="word"
+        point_card = ctk.CTkFrame(
+            self.points_container,
+            fg_color=AppTheme.BACKGROUND_COLOR,
+            corner_radius=10,
+            border_width=1,
+            border_color=AppTheme.BORDER_COLOR
         )
-        text_area.pack(side="left", fill="x", expand=True, padx=(0, 5))
-        
+        point_card.pack(fill="x", pady=6)
+
+        row = ctk.CTkFrame(point_card, fg_color="transparent")
+        row.pack(fill="x", padx=10, pady=10)
+
+        text_area = ctk.CTkTextbox(
+            row,
+            height=90,
+            font=AppTheme.get_font("normal"),
+            wrap="word",
+            fg_color=AppTheme.CARD_COLOR,
+            border_width=0
+        )
+        text_area.pack(side="left", fill="x", expand=True, padx=(0, 10))
+
         if value:
             text_area.insert("1.0", value)
-        
+
         text_area.bind("<KeyRelease>", lambda e, idx=index: self._on_point_change(idx))
-        
-        # Number label (with dots)
+
         nepali_num = to_nepali_number(index + 1)
         number_label = ctk.CTkLabel(
-            point_frame,
+            row,
             text=f"...{nepali_num}",
             font=AppTheme.get_font("normal", bold=True),
             text_color=AppTheme.TEXT_PRIMARY,
-            width=50
+            width=54
         )
-        number_label.pack(side="left", padx=(0, 5))
-        
-        # Delete button
+        number_label.pack(side="left", padx=(0, 8))
+
         delete_btn = ctk.CTkButton(
-            point_frame,
+            row,
             text="🗑️",
-            width=30,
-            height=30,
+            width=34,
+            height=34,
             fg_color="transparent",
-            hover_color=AppTheme.BACKGROUND_COLOR,
+            hover_color=AppTheme.DELETE_HOVER,
             text_color=AppTheme.ERROR_COLOR,
+            corner_radius=6,
             command=lambda idx=index: self._delete_point(idx)
         )
         delete_btn.pack(side="right")
-        
-        # Store widget reference
+
         self.point_widgets.append({
-            'frame': point_frame,
-            'text_area': text_area,
-            'number_label': number_label
+            "frame": point_card,
+            "text_area": text_area,
+            "number_label": number_label
         })
-    
+
     def _on_point_change(self, index: int):
         """Handle point text change."""
         if index < len(self.point_widgets):
-            text_area = self.point_widgets[index]['text_area']
+            text_area = self.point_widgets[index]["text_area"]
             self.points[index] = text_area.get("1.0", "end-1c")
-            
+
             if self.on_change:
                 self.on_change(self.points.copy())
-    
+
     def _add_new_point(self):
         """Add a new empty point."""
         new_index = len(self.points)
         self.points.append("")
         self._add_point_widget(new_index, "")
-        
+
         if self.on_change:
             self.on_change(self.points.copy())
-    
+
     def _delete_point(self, index: int):
         """Delete a point."""
-        # Always keep at least one point
         if len(self.points) <= 1:
             self.points[0] = ""
-            self.point_widgets[0]['text_area'].delete("1.0", "end")
+            self.point_widgets[0]["text_area"].delete("1.0", "end")
             if self.on_change:
                 self.on_change(self.points.copy())
             return
-        
-        # Remove from data
+
         self.points.pop(index)
-        
-        # Remove widget
         widget = self.point_widgets.pop(index)
-        widget['frame'].destroy()
-        
-        # Renumber remaining points
+        widget["frame"].destroy()
         self._renumber_points()
-        
+
         if self.on_change:
             self.on_change(self.points.copy())
-    
+
     def _renumber_points(self):
         """Renumber all points after deletion."""
         for i, widget in enumerate(self.point_widgets):
             nepali_num = to_nepali_number(i + 1)
-            widget['number_label'].configure(text=f"...{nepali_num}")
-    
+            widget["number_label"].configure(text=f"...{nepali_num}")
+
     def get_points(self) -> List[str]:
         """Get all points."""
         return self.points.copy()
-    
+
     def set_points(self, points: List[str]):
         """Set all points."""
-        # Clear existing
         for widget in self.point_widgets:
-            widget['frame'].destroy()
+            widget["frame"].destroy()
         self.point_widgets.clear()
-        
-        # Set new points
+
         self.points = points if points and len(points) > 0 else DEFAULT_TAPSIL_POINTS.copy()
         for i, point in enumerate(self.points):
             self._add_point_widget(i, point)

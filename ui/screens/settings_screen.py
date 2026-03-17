@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Settings screen UI."""
 
+import tkinter as tk
+from tkinter import ttk
 import customtkinter as ctk
 from typing import Dict
 
@@ -154,19 +156,27 @@ class SettingsScreen(ctk.CTkFrame):
 
         from config.districts import NEPAL_DISTRICTS_SORTED
 
-        self.district_var = ctk.StringVar(
-            value=self.settings.get("default_district", Settings.DEFAULT_DISTRICT)
-        )
-        district_menu = ctk.CTkOptionMenu(
+        style = ttk.Style()
+        try:
+            style.theme_use("clam")
+        except Exception:
+            pass
+        style.configure("Settings.TCombobox", padding=6)
+
+        district_value = self.settings.get("default_district", Settings.DEFAULT_DISTRICT)
+        self.district_var = tk.StringVar(value=district_value)
+
+        self.district_menu = ttk.Combobox(
             district_frame,
+            textvariable=self.district_var,
             values=NEPAL_DISTRICTS_SORTED,
-            variable=self.district_var,
-            width=200,
-            height=35,
-            font=AppTheme.get_font("normal"),
-            command=self._on_district_change
+            state="readonly",
+            width=18,
+            style="Settings.TCombobox",
+            font=(AppTheme.FONT_FAMILY_FALLBACK, 12)
         )
-        district_menu.pack(side="left")
+        self.district_menu.pack(side="left")
+        self.district_menu.bind("<<ComboboxSelected>>", self._on_district_change_event)
 
         autosave_frame = ctk.CTkFrame(content, fg_color="transparent")
         autosave_frame.pack(fill="x", pady=10)
@@ -295,8 +305,9 @@ class SettingsScreen(ctk.CTkFrame):
         self.settings["theme"] = theme
         AppTheme.set_theme(theme)
 
-    def _on_district_change(self, value: str):
-        """Handle district change."""
+    def _on_district_change_event(self, event=None):
+        """Handle district change from ttk combobox."""
+        value = self.district_var.get()
         self.local_db.set_setting("default_district", value)
         self.settings["default_district"] = value
 
