@@ -49,7 +49,7 @@ class DistrictField(ctk.CTkFrame):
             state="readonly",
             width=14,
             style="Mudda.TCombobox",
-            font=(AppTheme.FONT_FAMILY_FALLBACK, 12)
+            font=AppTheme.get_tk_font("small")
         )
         self.combo.pack(fill="x")
 

@@ -9,7 +9,6 @@ from utils.font_manager import FontManager
 class AppTheme:
     """Application theme configuration."""
 
-    # Colors (light, dark)
     PRIMARY_COLOR = ("#1a73e8", "#3b82f6")
     SECONDARY_COLOR = ("#4285f4", "#60a5fa")
     SUCCESS_COLOR = ("#34a853", "#22c55e")
@@ -32,17 +31,16 @@ class AppTheme:
     DUPLICATE_HOVER = ("#e8f5e9", "#1d3b2a")
     EXPORT_HOVER = ("#fff3e0", "#4b3621")
 
-    # Fonts
     FONT_FAMILY = FontManager().get_best_ui_font()
     FONT_FAMILY_FALLBACK = Settings.UI_FONT_FALLBACK
 
-    FONT_SIZE_SMALL = 12
-    FONT_SIZE_NORMAL = 14
-    FONT_SIZE_LARGE = 16
-    FONT_SIZE_TITLE = 20
-    FONT_SIZE_HEADER = 24
+    # Slightly larger so regular Nepali remains readable without fake bold
+    FONT_SIZE_SMALL = 13
+    FONT_SIZE_NORMAL = 15
+    FONT_SIZE_LARGE = 17
+    FONT_SIZE_TITLE = 22
+    FONT_SIZE_HEADER = 26
 
-    # Dimensions
     SIDEBAR_WIDTH = 200
     HEADER_HEIGHT = 80
     BUTTON_HEIGHT = 40
@@ -61,6 +59,7 @@ class AppTheme:
         theme = cls.get_saved_theme()
         ctk.set_appearance_mode(theme)
         cls._patch_clickable_cursors()
+        cls._patch_default_fonts()
 
     @classmethod
     def get_saved_theme(cls) -> str:
@@ -113,8 +112,52 @@ class AppTheme:
                 pass
 
     @classmethod
+    def _patch_default_fonts(cls):
+        """Force default Nepali-capable fonts for CTk widgets when no font is supplied."""
+        default_font = cls.get_font("normal")
+        small_font = cls.get_font("small")
+
+        def patch_widget_font(widget_class, font_value):
+            if getattr(widget_class, "_app_font_patched", False):
+                return
+
+            original_init = widget_class.__init__
+
+            def wrapped_init(self, *args, **kwargs):
+                kwargs.setdefault("font", font_value)
+                original_init(self, *args, **kwargs)
+
+            widget_class.__init__ = wrapped_init
+            widget_class._app_font_patched = True
+
+        for widget_class, font_value in (
+            (ctk.CTkLabel, default_font),
+            (ctk.CTkButton, default_font),
+            (ctk.CTkEntry, default_font),
+            (ctk.CTkTextbox, default_font),
+            (ctk.CTkCheckBox, default_font),
+            (ctk.CTkRadioButton, default_font),
+            (ctk.CTkSwitch, default_font),
+            (ctk.CTkOptionMenu, small_font),
+            (ctk.CTkSegmentedButton, small_font),
+        ):
+            try:
+                patch_widget_font(widget_class, font_value)
+            except Exception:
+                pass
+
+    @classmethod
+    def _use_real_bold(cls) -> bool:
+        """
+        Only use bold if you actually ship a bold Nepali font file.
+        Right now the project has only Regular TTF, so fake bold makes
+        Devanagari look ugly.
+        """
+        return False
+
+    @classmethod
     def get_font(cls, size: str = "normal", bold: bool = False) -> tuple:
-        """Get font tuple."""
+        """Get CustomTkinter font tuple."""
         sizes = {
             "small": cls.FONT_SIZE_SMALL,
             "normal": cls.FONT_SIZE_NORMAL,
@@ -124,9 +167,29 @@ class AppTheme:
         }
 
         font_size = sizes.get(size, cls.FONT_SIZE_NORMAL)
-        weight = "bold" if bold else "normal"
+
+        # Disable synthetic bold for Nepali UI until a real bold font file exists.
+        weight = "bold" if (bold and cls._use_real_bold()) else "normal"
 
         return (cls.FONT_FAMILY, font_size, weight)
+
+    @classmethod
+    def get_tk_font(cls, size: str = "normal", bold: bool = False) -> tuple:
+        """Get native Tk / ttk font tuple."""
+        sizes = {
+            "small": cls.FONT_SIZE_SMALL,
+            "normal": cls.FONT_SIZE_NORMAL,
+            "large": cls.FONT_SIZE_LARGE,
+            "title": cls.FONT_SIZE_TITLE,
+            "header": cls.FONT_SIZE_HEADER
+        }
+
+        font_size = sizes.get(size, cls.FONT_SIZE_NORMAL)
+        family = cls.FONT_FAMILY or cls.FONT_FAMILY_FALLBACK
+
+        weight = "bold" if (bold and cls._use_real_bold()) else "normal"
+
+        return (family, font_size, weight)
 
     @classmethod
     def get_button_style(cls, variant: str = "primary") -> dict:

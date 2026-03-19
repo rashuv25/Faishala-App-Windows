@@ -80,7 +80,7 @@ class FooterField(ctk.CTkFrame):
             values=saved_typists,
             state="normal",
             style="Mudda.TCombobox",
-            font=(AppTheme.FONT_FAMILY_FALLBACK, 12)
+            font=AppTheme.get_tk_font("small")
         )
         self.typist_input.pack(fill="x")
         self.typist_input.bind("<<ComboboxSelected>>", self._on_typist_change)
@@ -117,7 +117,7 @@ class FooterField(ctk.CTkFrame):
             values=saved_cdo_names,
             state="normal",
             style="Mudda.TCombobox",
-            font=(AppTheme.FONT_FAMILY_FALLBACK, 12)
+            font=AppTheme.get_tk_font("small")
         )
         self.cdo_input.pack(fill="x", pady=(0, 8))
         self.cdo_input.bind("<<ComboboxSelected>>", self._on_cdo_change)

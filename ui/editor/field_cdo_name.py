@@ -52,7 +52,7 @@ class CDONameField(ctk.CTkFrame):
             state="normal",
             width=18,
             style="Mudda.TCombobox",
-            font=(AppTheme.FONT_FAMILY_FALLBACK, 12)
+            font=AppTheme.get_tk_font("small")
         )
         self.combo.pack(fill="x")
 

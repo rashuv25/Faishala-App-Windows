@@ -4,7 +4,6 @@
 import platform
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 from config.settings import Settings
 
@@ -117,9 +116,19 @@ class FontManager:
         }
 
     def get_best_ui_font(self) -> str:
-        """Return the best UI font."""
-        if self.is_font_installed(self.ui_font_name):
-            return self.ui_font_name
+        """Return the best available UI font."""
+        candidates = [
+            self.ui_font_name,
+            "Kalimati",
+            "Noto Sans Devanagari",
+            "Mangal",
+            Settings.UI_FONT_FALLBACK,
+        ]
+
+        for font_name in candidates:
+            if font_name and self.is_font_installed(font_name):
+                return font_name
+
         return Settings.UI_FONT_FALLBACK
 
     def get_export_font(self) -> str:

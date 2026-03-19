@@ -43,7 +43,7 @@ class Settings:
     UI_FONT_NAME = "Noto Sans Devanagari"
     UI_FONT_FILE = "NotoSansDevanagari-Regular.ttf"
     UI_FONT_PATH = FONTS_DIR / UI_FONT_FILE
-    UI_FONT_FALLBACK = "Arial"
+    UI_FONT_FALLBACK = "Noto Sans Devanagari"
 
     # UI Settings
     WINDOW_WIDTH = 1200

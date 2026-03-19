@@ -173,7 +173,7 @@ class SettingsScreen(ctk.CTkFrame):
             state="readonly",
             width=18,
             style="Settings.TCombobox",
-            font=(AppTheme.FONT_FAMILY_FALLBACK, 12)
+            font=AppTheme.get_tk_font("small")
         )
         self.district_menu.pack(side="left")
         self.district_menu.bind("<<ComboboxSelected>>", self._on_district_change_event)

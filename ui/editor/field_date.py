@@ -97,7 +97,7 @@ class DateField(ctk.CTkFrame):
             state="readonly",
             width=8,
             style="Mudda.TCombobox",
-            font=(AppTheme.FONT_FAMILY_FALLBACK, 12)
+            font=AppTheme.get_tk_font("small")
         )
         self.year_dropdown.pack(side="left", padx=(0, 6))
         self.year_dropdown.bind("<<ComboboxSelected>>", self._on_year_change)
@@ -117,7 +117,7 @@ class DateField(ctk.CTkFrame):
             state="readonly",
             width=10,
             style="Mudda.TCombobox",
-            font=(AppTheme.FONT_FAMILY_FALLBACK, 12)
+            font=AppTheme.get_tk_font("small")
         )
         self.month_dropdown.pack(side="left", padx=(0, 10))
         self.month_dropdown.bind("<<ComboboxSelected>>", self._on_month_change)
@@ -131,7 +131,7 @@ class DateField(ctk.CTkFrame):
             state="readonly",
             width=5,
             style="Mudda.TCombobox",
-            font=(AppTheme.FONT_FAMILY_FALLBACK, 12)
+            font=AppTheme.get_tk_font("small")
         )
         self.day_dropdown.pack(side="left", padx=(0, 6))
         self.day_dropdown.bind("<<ComboboxSelected>>", self._on_day_change)
@@ -152,7 +152,7 @@ class DateField(ctk.CTkFrame):
             state="readonly",
             width=5,
             style="Mudda.TCombobox",
-            font=(AppTheme.FONT_FAMILY_FALLBACK, 12)
+            font=AppTheme.get_tk_font("small")
         )
         self.day_num_dropdown.pack(side="left", padx=(0, 6))
         self.day_num_dropdown.bind("<<ComboboxSelected>>", self._on_day_num_change)
