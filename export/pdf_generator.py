@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, Any, List
 import html
 
+from PIL import ImageFont
 from weasyprint import HTML, CSS
 from config.settings import Settings
 from config.constants import DEFAULT_TAPSIL_POINTS, NEPALI_MONTHS
@@ -51,8 +52,10 @@ class PdfGenerator:
         district = self._escape(data.get("district", ""))
         cdo_name = self._escape(data.get("cdo_name", ""))
 
-        header_line_1 = f"जिल्ला प्रशासन कार्यालय, {district}का प्रमुख जिल्ला अधिकारी {cdo_name} को"
-        header_line_2 = "इजालासबाट भएको फैसला"
+        header_line_1 = (
+            f'जिल्ला प्रशासन कार्यालय, {district}का प्रमुख जिल्ला अधिकारी '
+            f'<span class="cdo-name">{cdo_name}</span> को'
+        )
 
         wadi_html = self._paragraph_lines(data.get("wadi_content", ""))
         pratiwadi_html = self._paragraph_lines(data.get("pratiwadi_content", ""))
@@ -78,27 +81,31 @@ class PdfGenerator:
     <div class="page">
 
         <div class="header">
-            <div class="header-line">{header_line_1}</div>
-            <div class="header-line">{header_line_2}</div>
+            <div class="header-line header-line-1">{header_line_1}</div>
+            <div class="header-line header-line-2">
+                <span class="header-title">इजालासबाट भएको फैसला</span>
+                <span class="header-dots"></span>
+            </div>
         </div>
 
-        <div class="separator">............................................</div>
+        <div class="party-wrap">
+            <div class="party-block party-left">
+                <div class="section-heading">वादी</div>
+                <div class="party-content">{wadi_html}</div>
+            </div>
 
-        <table class="party-table">
-            <tr>
-                <td class="party-col">
-                    <div class="section-heading">वादी</div>
-                    <div class="party-content">{wadi_html}</div>
-                </td>
-                <td class="party-col">
-                    <div class="section-heading">प्रतिवादी</div>
-                    <div class="party-content">{pratiwadi_html}</div>
-                </td>
-            </tr>
-        </table>
+            <div class="party-block party-right">
+                <div class="section-heading">प्रतिवादी</div>
+                <div class="party-content">{pratiwadi_html}</div>
+            </div>
+        </div>
 
-        <div class="label-line"><span class="label">मुद्दा :</span> <span class="value">{mudda}</span></div>
-        <div class="label-line"><span class="label">मु. द. नं. :</span> <span class="value">{mudda_number}</span></div>
+        <div class="label-line centered-label-line">
+            <span class="label">मुद्दा :</span> <span class="value">{mudda}</span>
+        </div>
+        <div class="label-line centered-label-line">
+            <span class="label">मु. द. नं. :</span> <span class="value">{mudda_number}</span>
+        </div>
 
         <div class="section-title">केसको संक्षिप्त व्यहोरा</div>
         <div class="case-points">
@@ -115,15 +122,17 @@ class PdfGenerator:
             {tapsil_html}
         </div>
 
+        <div class="footer-gap"></div>
+
         <div class="footer">
             <div class="footer-left">
                 <div>टिपोट गर्ने ना.सु. {footer_typist}</div>
             </div>
 
             <div class="footer-right">
-                <div>................................</div>
+                <div class="sign-line">................................</div>
                 <div class="footer-cdo-name">{footer_cdo}</div>
-                <div>प्रमुख जिल्ला अधिकारी</div>
+                <div class="footer-cdo-title">प्रमुख जिल्ला अधिकारी</div>
             </div>
         </div>
 
@@ -166,30 +175,125 @@ class PdfGenerator:
         return "\n".join(paras) if paras else '<p class="decision-para"></p>'
 
     def _build_tapsil_html(self, tapsil_points: List[str]) -> str:
-        """Build HTML for tapsil section."""
+        """Build HTML for tapsil section with proper trailing dots and point numbers."""
         if not tapsil_points:
             tapsil_points = DEFAULT_TAPSIL_POINTS
 
         items = []
         for i, point in enumerate(tapsil_points, 1):
             nep_num = self._to_nepali_number(i)
-            point = self._escape(point or "")
             items.append(
-                f"""
-                <div class="tapsil-item">
-                    <div class="tapsil-text">{point}</div>
-                    <div class="tapsil-num">...{nep_num}</div>
-                </div>
-                """
+                self._build_single_tapsil_point_html(str(point or ""), nep_num)
             )
         return "\n".join(items)
 
+    def _measure_text_width(self, text: str, font_size_pt: float = 14.0) -> float:
+        """Measure rendered text width in pixels using the export font."""
+        if not text:
+            return 0.0
+
+        px_size = max(1, int(round(font_size_pt * 96 / 72)))  # pt -> px
+        font = ImageFont.truetype(str(self.font_path), px_size)
+        return float(font.getlength(text))
+
+    def _wrap_text_to_width(
+        self,
+        text: str,
+        max_width_px: float,
+        font_size_pt: float = 14.0
+    ) -> List[str]:
+        """Wrap text into lines according to rendered font width."""
+        text = " ".join(str(text).split())
+        if not text:
+            return [""]
+
+        words = text.split(" ")
+        lines: List[str] = []
+        current = words[0]
+
+        for word in words[1:]:
+            trial = current + " " + word
+            if self._measure_text_width(trial, font_size_pt) <= max_width_px:
+                current = trial
+            else:
+                lines.append(current)
+                current = word
+
+        lines.append(current)
+        return lines
+
+    def _build_single_tapsil_point_html(self, point_text: str, point_num: str) -> str:
+        """Build one tapsil point so that only the last line gets dots + number."""
+        point_text = " ".join(str(point_text).split())
+
+        # A4 width = 21cm
+        # Page margins = left 2.5cm, right 0.8cm => usable = 17.7cm
+        # tapsil-list padding-left = 0.85cm => inner usable approx = 16.85cm
+        total_width_px = (16.85 / 2.54) * 96
+
+        font_size_pt = 14.0
+        num_width = self._measure_text_width(point_num, font_size_pt)
+        dot_width = max(self._measure_text_width(".", font_size_pt), 1.0)
+        gap_width = self._measure_text_width("  ", font_size_pt)
+        min_dots_width = dot_width * 10
+
+        normal_line_width = total_width_px
+        final_line_text_width = max(
+            120.0,
+            total_width_px - num_width - min_dots_width - gap_width
+        )
+
+        lines = self._wrap_text_to_width(point_text, normal_line_width, font_size_pt)
+
+        # Ensure final line has room for dots + number
+        while lines and self._measure_text_width(lines[-1], font_size_pt) > final_line_text_width:
+            last_words = lines[-1].split()
+            if len(last_words) <= 1:
+                break
+
+            moved_word = last_words.pop()
+            lines[-1] = " ".join(last_words).strip()
+
+            if len(lines) == 1:
+                lines.append(moved_word)
+            else:
+                lines.append(moved_word)
+
+        lines = [ln for ln in lines if ln.strip()]
+        if not lines:
+            lines = [""]
+
+        final_text = lines[-1]
+        final_text_width = self._measure_text_width(final_text, font_size_pt)
+
+        remaining_width = total_width_px - final_text_width - num_width - gap_width
+        dot_count = max(6, int(remaining_width / dot_width))
+        dots = "." * dot_count
+
+        body_lines = []
+        for line in lines[:-1]:
+            body_lines.append(
+                f'<div class="tapsil-subline">{self._escape(line)}</div>'
+            )
+
+        body_lines.append(
+            f'''
+            <div class="tapsil-final-line">
+                <span class="tapsil-final-text">{self._escape(final_text)}</span>
+                <span class="tapsil-final-dots">{self._escape(dots)}</span>
+                <span class="tapsil-final-num">{self._escape(point_num)}</span>
+            </div>
+            '''
+        )
+
+        return f'<div class="tapsil-item">{"".join(body_lines)}</div>'
+
     def _build_date_text(self, data: Dict[str, Any]) -> str:
         """Build date text."""
-        year = self._escape(data.get("document_date_year", ""))
+        year = self._to_nepali_number(data.get("document_date_year", ""))
         month = data.get("document_date_month", "")
-        day = self._escape(data.get("document_date_day", ""))
-        day_num = self._escape(data.get("document_date_day_num", ""))
+        day = self._to_nepali_number(data.get("document_date_day", ""))
+        day_num = self._to_nepali_number(data.get("document_date_day_num", ""))
 
         month_name = ""
         if isinstance(month, int) and 1 <= month <= len(NEPALI_MONTHS):
@@ -216,8 +320,8 @@ class PdfGenerator:
         """Escape HTML safely."""
         return html.escape("" if value is None else str(value))
 
-    def _to_nepali_number(self, num: int) -> str:
-        """Convert integer to Nepali digits."""
+    def _to_nepali_number(self, num: Any) -> str:
+        """Convert integer/string to Nepali digits."""
         from config.constants import NEPALI_NUMBERS
         return "".join(NEPALI_NUMBERS.get(ch, ch) for ch in str(num))
 
@@ -233,7 +337,7 @@ class PdfGenerator:
 
 @page {{
     size: A4;
-    margin: 2cm 2.2cm 2cm 2.2cm;
+    margin: 2cm 0.8cm 2cm 2.5cm;
 }}
 
 body {{
@@ -249,50 +353,88 @@ body {{
 }}
 
 .header {{
-    text-align: center;
     margin-top: 0.8cm;
-    margin-bottom: 1cm;
+    margin-bottom: 0.7cm;
 }}
 
 .header-line {{
-    font-size: 17pt;
+    font-size: 13pt;
+    line-height: 1.45;
+}}
+
+.header-line-1 {{
+    text-align: left;
+    padding-left: 1cm;
+    margin-bottom: 0.12cm;
+}}
+
+.cdo-name {{
     font-weight: 700;
-    line-height: 1.6;
 }}
 
-.separator {{
-    text-align: center;
-    font-size: 15pt;
-    margin-bottom: 1cm;
+.header-line-2 {{
+    display: flex;
+    align-items: baseline;
+    gap: 0.15cm;
+    padding-left: 1cm;
 }}
 
-.party-table {{
+.header-title {{
+    font-weight: 700;
+    white-space: nowrap;
+}}
+
+.header-dots {{
+    flex: 1;
+    border-bottom: 2px dotted #111111;
+    transform: translateY(-0.08cm);
+}}
+
+.party-wrap {{
+    display: flex;
     width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-    margin-bottom: 0.8cm;
+    gap: 1.2cm;
+    margin-bottom: 0.7cm;
+    align-items: flex-start;
 }}
 
-.party-col {{
-    width: 50%;
-    vertical-align: top;
-    padding-right: 1.2cm;
+.party-block {{
+    min-width: 0;
 }}
 
-.party-col:last-child {{
-    padding-right: 0;
-    padding-left: 0.6cm;
+.party-left {{
+    flex: 0 0 42%;
+    max-width: 42%;
+}}
+
+.party-right {{
+    flex: 0 0 52%;
+    max-width: 52%;
+    margin-left: auto;
 }}
 
 .section-heading {{
     font-size: 16pt;
     font-weight: 700;
-    margin-bottom: 0.2cm;
+    text-align: center;
+    margin-bottom: 0.18cm;
 }}
 
 .party-content {{
     font-size: 14pt;
-    line-height: 1.8;
+    line-height: 1.75;
+    text-align: justify;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}}
+
+.party-left .party-content {{
+    padding-right: 0.15cm;
+}}
+
+.party-right .party-content {{
+    padding-left: 0.25cm;
+    padding-right: 0;
 }}
 
 .line {{
@@ -301,7 +443,11 @@ body {{
 
 .label-line {{
     font-size: 15pt;
-    margin-bottom: 0.35cm;
+    margin-bottom: 0.28cm;
+}}
+
+.centered-label-line {{
+    text-align: center;
 }}
 
 .label {{
@@ -316,30 +462,30 @@ body {{
     font-size: 16pt;
     font-weight: 700;
     margin-top: 0.55cm;
-    margin-bottom: 0.35cm;
+    margin-bottom: 0.28cm;
 }}
 
 .case-points {{
-    margin-bottom: 0.45cm;
+    margin-bottom: 0.42cm;
 }}
 
 .case-point {{
     display: table;
     width: 100%;
-    margin-bottom: 0.2cm;
+    margin-bottom: 0.18cm;
 }}
 
 .case-num {{
     display: table-cell;
-    width: 1cm;
+    width: 1.2cm;
     vertical-align: top;
-    font-weight: 700;
 }}
 
 .case-text {{
     display: table-cell;
     vertical-align: top;
     text-align: justify;
+    padding-left: 0.45cm;
 }}
 
 .office-decision {{
@@ -347,64 +493,95 @@ body {{
 }}
 
 .decision-para {{
-    text-indent: 1cm;
-    margin: 0 0 0.2cm 0;
+    text-indent: 1.2cm;
+    margin: 0 0 0.18cm 1cm;
     text-align: justify;
 }}
 
 .tapsil-list {{
-    margin-bottom: 0.7cm;
+    margin-bottom: 0;
+    padding-left: 0.85cm;
 }}
 
 .tapsil-item {{
-    display: table;
-    width: 100%;
     margin-bottom: 0.18cm;
+    font-size: 14pt;
+    line-height: 1.9;
 }}
 
-.tapsil-text {{
-    display: table-cell;
-    vertical-align: top;
-    text-align: justify;
-    padding-right: 0.4cm;
+.tapsil-subline {{
+    display: block;
+    text-align: left;
 }}
 
-.tapsil-num {{
-    display: table-cell;
-    width: 1.8cm;
-    text-align: right;
-    vertical-align: top;
-    font-weight: 700;
+.tapsil-final-line {{
+    display: flex;
+    align-items: baseline;
+    white-space: nowrap;
+}}
+
+.tapsil-final-text {{
+    flex: 0 0 auto;
+    white-space: nowrap;
+}}
+
+.tapsil-final-dots {{
+    flex: 1 1 auto;
+    overflow: hidden;
+    white-space: nowrap;
+    margin-left: 0.08cm;
+    margin-right: 0.08cm;
+    letter-spacing: 0.01em;
+}}
+
+.tapsil-final-num {{
+    flex: 0 0 auto;
+    white-space: nowrap;
+}}
+
+.footer-gap {{
+    height: 1cm;
 }}
 
 .footer {{
     width: 100%;
-    margin-top: 1cm;
     display: table;
+    margin-top: 0;
 }}
 
 .footer-left {{
     display: table-cell;
-    width: 50%;
+    width: 45%;
     vertical-align: top;
     font-size: 14pt;
 }}
 
 .footer-right {{
     display: table-cell;
-    width: 50%;
+    width: 55%;
     vertical-align: top;
     text-align: right;
     font-size: 14pt;
 }}
 
+.sign-line {{
+    margin-bottom: 0;
+    line-height: 1.1;
+}}
+
 .footer-cdo-name {{
-    margin-top: 0.15cm;
-    margin-bottom: 0.1cm;
+    margin-top: 0.05cm;
+    margin-bottom: 0.02cm;
+    line-height: 1.1;
+}}
+
+.footer-cdo-title {{
+    margin-top: 0;
+    line-height: 1.1;
 }}
 
 .date-line {{
-    margin-top: 0.9cm;
+    margin-top: 0.7cm;
     font-size: 14pt;
 }}
 """
