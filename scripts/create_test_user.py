@@ -42,7 +42,7 @@ def create_test_user(username: str, password: str):
     
     db.execute(query, (username, password_hash, 2081, 1))
     
-    print(f"✅ Test user created successfully!")
+    print("Test user created successfully!")
     print(f"   Username: {username}")
     print(f"   Password: {password}")
 
