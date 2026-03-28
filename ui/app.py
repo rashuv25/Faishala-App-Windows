@@ -10,7 +10,7 @@ from config.settings import Settings
 from auth.session_manager import SessionManager
 from auth.nepali_date_validator import NepaliDateValidator
 from database.local_db import LocalDatabase
-from backup.sync_manager import SyncManager
+
 
 from .theme import AppTheme
 from .screens.login_screen import LoginScreen
