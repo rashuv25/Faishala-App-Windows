@@ -9,7 +9,7 @@ from pathlib import Path
 from config.settings import Settings
 from ui.theme import AppTheme
 from auth.authenticator import Authenticator
-from database.remote_db import RemoteDatabase
+
 
 
 class LoginScreen(ctk.CTkFrame):
@@ -21,10 +21,17 @@ class LoginScreen(ctk.CTkFrame):
         
         self.on_login_success = on_login_success
         self.authenticator = Authenticator()
-        self.remote_db = RemoteDatabase()
-        
-        self._create_widgets()
-    
+        self.remote_db = None
+
+        if not Settings.OFFLINE_MODE:
+            try:
+                from database.remote_db import RemoteDatabase
+                self.remote_db = RemoteDatabase()
+            except Exception:
+                self.remote_db = None
+                
+                self._create_widgets()
+            
     def _create_widgets(self):
         """Create login screen widgets."""
         # Center container
@@ -149,16 +156,16 @@ class LoginScreen(ctk.CTkFrame):
         status_frame = ctk.CTkFrame(center_frame, fg_color="transparent")
         status_frame.pack(pady=20)
         
-        status_color = AppTheme.SUCCESS_COLOR if self.remote_db.is_connected() else AppTheme.ERROR_COLOR
-        self.status_indicator = ctk.CTkLabel(
-            status_frame,
-            text="●",
-            font=AppTheme.get_font("small"),
-            text_color=status_color
-        )
-        self.status_indicator.pack(side="left", padx=(0, 5))
-        
-        status_text = "Online" if self.remote_db.is_connected() else "Offline"
+        is_online = False
+        if self.remote_db is not None:
+            try:
+                is_online = self.remote_db.is_connected()
+            except Exception:
+                is_online = False
+
+        status_color = AppTheme.SUCCESS_COLOR if is_online else AppTheme.ERROR_COLOR
+        ...
+        status_text = "Online" if is_online else "Offline"
         status_label = ctk.CTkLabel(
             status_frame,
             text=status_text,

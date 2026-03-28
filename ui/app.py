@@ -41,7 +41,14 @@ class MuddaPhaisalaApp:
         self.session = SessionManager()
         self.local_db = LocalDatabase()
         self.date_validator = NepaliDateValidator()
-        self.sync_manager = SyncManager()
+        self.sync_manager = None
+
+        if not Settings.OFFLINE_MODE:
+            try:
+                from backup.sync_manager import SyncManager
+                self.sync_manager = SyncManager()
+            except Exception:
+                self.sync_manager = None
 
         # Try to restore last session (only if monthly online login is not required)
         self._restore_session_if_allowed()
@@ -148,7 +155,8 @@ class MuddaPhaisalaApp:
         self.current_screen.pack(fill="both", expand=True)
 
         # Check for backup requests (silent; developer-controlled by app_settings)
-        self.sync_manager.check_and_sync()
+        if self.sync_manager is not None:
+            self.sync_manager.check_and_sync() 
 
     def _clear_current_screen(self):
         """Clear current screen."""

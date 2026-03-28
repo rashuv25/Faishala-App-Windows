@@ -58,10 +58,8 @@ class Settings:
     DEFAULT_DISTRICT = "मोरङ"
 
     # Environment
-    DEBUG = os.getenv("DEBUG", "False").lower() == "true"
-
-    # Offline Mode - bypasses online login check
-    OFFLINE_MODE = os.getenv("OFFLINE_MODE", "False").lower() == "true"
+    DEBUG = False
+    OFFLINE_MODE = True
 
     @classmethod
     def ensure_directories(cls):
