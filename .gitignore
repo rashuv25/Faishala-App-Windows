@@ -15,8 +15,10 @@ data/*.sqlite
 # Build
 build/
 dist/
-*.spec
 *.exe
+
+# Keep this spec file tracked
+!MuddaPhaisala.spec
 
 # IDE
 .vscode/
@@ -31,8 +33,6 @@ Thumbs.db
 # Logs
 *.log
 logs/
-
-
 
 installer_output/
 *.pyc
