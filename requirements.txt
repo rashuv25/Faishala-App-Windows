@@ -1,15 +1,13 @@
 # GUI Framework
 customtkinter>=5.2.0
 
-# Database
-# SQLite is built-in to Python
-
 # Remote Database & Auth
 supabase>=2.0.0
 
 # Document Generation
 python-docx>=1.0.0
-docx2pdf>=0.1.8
+docx2pdf>=0.1.8; platform_system == "Windows"
+weasyprint>=62.0; platform_system != "Windows"
 
 # Nepali Date/Time
 nepali-datetime>=1.0.7

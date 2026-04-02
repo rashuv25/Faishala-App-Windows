@@ -32,7 +32,7 @@ jobs:
         shell: powershell
         run: |
           $env:PYTHONIOENCODING = "utf-8"
-          python scripts/create_test_user.py RKP Nepal@222
+          python scripts/create_test_user.py
 
       - name: Build Windows app with PyInstaller
         run: pyinstaller --noconfirm --clean MuddaPhaisala.spec

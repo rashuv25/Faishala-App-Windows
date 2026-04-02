@@ -1,12 +1,27 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import collect_all
 
-block_cipher = None
+import sys
 
 datas = []
-datas += collect_data_files("customtkinter")
-datas += collect_data_files("nepali_datetime")
+binaries = []
+hiddenimports = []
+
+pkgs = ["customtkinter", "nepali_datetime"]
+
+# WeasyPrint often fails to import on Windows build environments due to
+# missing native dependencies (GTK/Cairo). The app uses docx2pdf on Windows,
+# so we only bundle WeasyPrint on non-Windows builds.
+if sys.platform != "win32":
+    pkgs.append("weasyprint")
+
+for pkg in pkgs:
+    pkg_datas, pkg_binaries, pkg_hiddenimports = collect_all(pkg)
+    datas += pkg_datas
+    binaries += pkg_binaries
+    hiddenimports += pkg_hiddenimports
+
 datas += [
     ("assets", "assets"),
     ("data", "data"),
@@ -15,13 +30,12 @@ datas += [
 a = Analysis(
     ["main.py"],
     pathex=[],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
-    hiddenimports=["nepali_datetime"],
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
     noarchive=False,
 )
 
