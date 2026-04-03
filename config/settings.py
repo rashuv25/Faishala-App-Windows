@@ -2,6 +2,7 @@
 """Application settings and configuration."""
 
 import os
+import sys
 from pathlib import Path
 
 try:
@@ -14,17 +15,30 @@ except ImportError:
 class Settings:
     """Application settings."""
 
-    # Application Info
+    # ---------------- App Info ----------------
     APP_NAME = "मुद्दा फैसला"
     APP_NAME_ENGLISH = "Mudda Phaisala"
     APP_VERSION = "1.0.0"
 
-    # Paths
-    BASE_DIR = Path(__file__).parent.parent
-    DATA_DIR = BASE_DIR / "data"
-    ASSETS_DIR = BASE_DIR / "assets"
+    # ---------------- Base Paths ----------------
+    if getattr(sys, "frozen", False):
+        # Running from PyInstaller EXE
+        EXE_DIR = Path(sys.executable).resolve().parent
+        BUNDLE_DIR = Path(getattr(sys, "_MEIPASS", EXE_DIR)).resolve()
+    else:
+        # Running from source
+        EXE_DIR = Path(__file__).resolve().parent.parent
+        BUNDLE_DIR = EXE_DIR
+
+    # Use bundled assets/fonts/templates from PyInstaller package
+    BASE_DIR = BUNDLE_DIR
+    ASSETS_DIR = BUNDLE_DIR / "assets"
     FONTS_DIR = ASSETS_DIR / "fonts"
     IMAGES_DIR = ASSETS_DIR / "images"
+    TEMPLATES_DIR = ASSETS_DIR / "templates"
+
+    # Use writable data folder beside exe
+    DATA_DIR = EXE_DIR / "data"
 
     # Database
     DATABASE_NAME = "mudda_phaisala.db"

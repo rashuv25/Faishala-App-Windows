@@ -1,18 +1,15 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 from PyInstaller.utils.hooks import collect_all
-
 import sys
 
 datas = []
 binaries = []
 hiddenimports = []
 
-pkgs = ["customtkinter", "nepali_datetime"]
+pkgs = ["customtkinter", "nepali_datetime", "docx2pdf"]
 
-# WeasyPrint often fails to import on Windows build environments due to
-# missing native dependencies (GTK/Cairo). The app uses docx2pdf on Windows,
-# so we only bundle WeasyPrint on non-Windows builds.
+# WeasyPrint only for non-Windows
 if sys.platform != "win32":
     pkgs.append("weasyprint")
 
