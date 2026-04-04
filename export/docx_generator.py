@@ -362,11 +362,17 @@ class DocxGenerator:
             "day_num": data.get("document_date_day_num", "")
         }
 
+        month_raw = date_info["month"]
         month_name = ""
-        if isinstance(date_info["month"], int) and 1 <= date_info["month"] <= len(NEPALI_MONTHS):
-            month_name = NEPALI_MONTHS[date_info["month"] - 1]
-        elif date_info["month"]:
-            month_name = date_info["month"]
+
+        try:
+            month_index = int(str(month_raw).strip())
+            if 1 <= month_index <= len(NEPALI_MONTHS):
+                month_name = NEPALI_MONTHS[month_index - 1]
+            else:
+                month_name = str(month_raw).strip()
+        except (ValueError, TypeError):
+            month_name = str(month_raw).strip() if month_raw else ""
 
         year_np = self._to_nepali_number(date_info["year"]) if date_info["year"] != "" else ""
         day_np = self._to_nepali_number(date_info["day"]) if date_info["day"] != "" else ""

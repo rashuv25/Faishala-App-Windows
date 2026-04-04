@@ -349,13 +349,15 @@ class PdfGenerator:
         day_num = self._to_nepali_number(data.get("document_date_day_num", ""))
 
         month_name = ""
-        if isinstance(month, int) and 1 <= month <= len(NEPALI_MONTHS):
-            month_name = NEPALI_MONTHS[month - 1]
-        elif month:
-            month_name = str(month)
 
-        month_name = self._escape(month_name)
-        return f"ईति सम्वत {year} साल {month_name} {day} गते रोज {day_num} शुभम्"
+        try:
+            month_index = int(str(month).strip())
+            if 1 <= month_index <= len(NEPALI_MONTHS):
+                month_name = NEPALI_MONTHS[month_index - 1]
+            else:
+                month_name = str(month).strip()
+        except (ValueError, TypeError):
+            month_name = str(month).strip() if month else ""
 
     def _paragraph_lines(self, text: str) -> str:
         """Convert multi-line text into HTML paragraphs."""
